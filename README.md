@@ -42,9 +42,9 @@ Para este test se utilizarán la clase `Ambulancia`, la interfaz `State` y la ru
 
 ## 3. Criterios de Entrega
 
-- [ ] **Código fuente completo** de las suites de pruebas implementadas.
-- [ ] **Capturas de ejecución** mostrando las pruebas en **verde** (funcionamiento correcto) y en **rojo** (detección de los errores).
-- [ ] **Informe formal** documentando:
+- [x] **Código fuente completo** de las suites de pruebas implementadas.
+- [x] **Capturas de ejecución** mostrando las pruebas en **verde** (funcionamiento correcto) y en **rojo** (detección de los errores).
+- [x] **Informe formal** documentando:
   - Diseño de escenarios.
   - Casos de prueba (aplicación de clases de equivalencia y valores límite).
   - Conclusiones y resultados obtenidos.
@@ -98,3 +98,44 @@ El sistema proveerá un componente DataAccessObject (DAO) para exponer los servi
 * **Operación de Guardado:** El sistema aceptará una entidad de asociado, validará que no sea nula, la convertirá al formato DTO y ejecutará una inserción SQL persistente.
 * **Operaciones de Carga:** El sistema proveerá mecanismos para recuperar registros de asociados de manera individual por su identificador único, en lotes acotados con un límite especificado, o como una colección completa desde la base de datos.
 * **Operaciones de Actualización y Eliminación:** El sistema modificará registros existentes o eliminará entradas basándose en criterios únicos como el número de documento (DNI).
+
+---
+
+## 4. Contenido del Repositorio
+
+| Ubicación | Contenido |
+| :--- | :--- |
+| `Trabajo Práctico Final - Estrategia de Testing (Aplicación Clínica) V3.0.pdf` | Informe final: escenarios, particiones de equivalencia, valores límite, matrices de casos de prueba, resultados y conclusiones. |
+| `Info/TPE2026/src/main/java/test/` | Suites de prueba: `AsociadoDTOTest`, `IntegracionPersistenciaTest`, `AmbulanciaStateMockTest` (incluye `StateMock`) y `AmbulanciaConcurrenciaTest`. |
+| `Clases Test/java/` | Copia de las suites para su lectura directa desde GitHub. |
+| `Img/` | Capturas de ejecución en JUnit (ver tabla de resultados). |
+| `Info/TPE2026/` | Proyecto Maven de la aplicación Clínica (código provisto + correcciones). |
+| `Info/` | Enunciado y SRS del trabajo práctico. |
+
+## 5. Resultados
+
+| Captura | Suite | Resultado |
+| :--- | :--- | :--- |
+| `Inciso1.1` / `Inciso1.2` | AsociadoDTOTest (código provisto) | 🔴 16 pruebas, 1 falla: `numero > 0` vs SRS `numero >= 0` |
+| `Inciso1.3` | AsociadoDTOTest (tras la corrección) | 🟢 16/16 |
+| `Inciso2` | IntegracionPersistenciaTest | 🔴 13 pruebas, 3 detectan defectos: `cargar()` sin `next()` y `actualizar()` sobre id fijo |
+| `Inciso3.1` | AmbulanciaStateMockTest | 🟢 3/3 |
+| `Inciso3.2` | AmbulanciaConcurrenciaTest | 🔴 4 pruebas, 2 detectan defectos: bucle invertido en `RetornoAutomatico` y transición errónea en `TrasladandoPacienteClinicaState` |
+
+## 6. Cómo Ejecutar las Pruebas
+
+**Requisitos**
+- JDK 8 o superior.
+- MySQL 8 en `localhost:3306` con el usuario `progra_c` / contraseña `progra_c` (credenciales definidas en `BaseDeDatos.java`). Solo lo requiere `IntegracionPersistenciaTest`:
+  ```sql
+  CREATE USER 'progra_c'@'localhost' IDENTIFIED BY 'progra_c';
+  GRANT ALL PRIVILEGES ON *.* TO 'progra_c'@'localhost';
+  FLUSH PRIVILEGES;
+  ```
+
+**Pasos (Eclipse)**
+1. `File → Import → Maven → Existing Maven Projects` y seleccionar la carpeta `Info/TPE2026`. Las dependencias (JUnit 4 y el driver de MySQL) están declaradas en el `pom.xml`.
+2. Verificar en `Window → Preferences → Java → JUnit` que esté habilitado *Add '-ea' to VM arguments*: las validaciones de `AsociadoDTO` usan `assert` y requieren aserciones activas.
+3. Clic derecho sobre cada clase de `src/main/java/test` → `Run As → JUnit Test`.
+
+> `IntegracionPersistenciaTest` crea la base `Grupo_7` y recrea la tabla `Asociados` en cada ejecución.
