@@ -5,10 +5,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import modelo.modeloDominio.ambulancia.Ambulancia;
+import modelo.modeloDominio.ambulancia.AtendiendoEnDomicilioState;
 import modelo.modeloDominio.ambulancia.DisponibleState;
+import modelo.modeloDominio.ambulancia.EnTallerState;
+import modelo.modeloDominio.ambulancia.RegresandoClinicaSinPacienteState;
+import modelo.modeloDominio.ambulancia.RegresandoDelTallerState;
 import modelo.modeloDominio.ambulancia.RetornoAutomatico;
 import modelo.modeloDominio.ambulancia.TrasladandoPacienteClinicaState;
 import modelo.modeloDominio.personas.asociado.Asociado;
+import modelo.modeloDominio.personas.operario.Operario;
 import modelo.modeloDominio.util.Domicilio;
 
 public class AmbulanciaConcurrenciaTest {
@@ -91,5 +96,44 @@ public class AmbulanciaConcurrenciaTest {
         hiloSocio.join(1000); // Esperamos a que el hilo complete
 
         assertFalse("El hilo del asociado debe haber desbloqueado y finalizado correctamente", hiloSocio.isAlive());
+    }
+    
+    // =========================================================================
+    // 3. FLUJO COMPLETO DE LA MÁQUINA DE ESTADOS ACOPLADA A AMBULANCIA
+    // =========================================================================
+
+    @Test
+    public void testFlujoCompletoMaquinaDeEstados() {
+        Domicilio dom = new Domicilio("Colón", 2000, "Mar del Plata");
+        Asociado asociado = new Asociado("Socio2", "Lopez", "33333333", "2231112222", dom);
+        Operario operario = new Operario("Op", "Garcia", "44444444", "2233334444", dom, ambulancia);
+
+        // Estado inicial
+        assertTrue("Estado inicial: Disponible", ambulancia.getEstadoActual() instanceof DisponibleState);
+        assertFalse(ambulancia.isOcupado());
+
+        // Ciclo de atención a domicilio: Disponible -> AtendiendoEnDomicilio -> RegresandoSinPaciente -> Disponible
+        ambulancia.atenderDomicilio(asociado);
+        assertTrue("Debe pasar a AtendiendoEnDomicilio", ambulancia.getEstadoActual() instanceof AtendiendoEnDomicilioState);
+        assertTrue(ambulancia.isOcupado());
+
+        ambulancia.regresarSinPaciente();
+        assertTrue("Debe pasar a RegresandoClinicaSinPaciente", ambulancia.getEstadoActual() instanceof RegresandoClinicaSinPacienteState);
+        assertFalse(ambulancia.isOcupado());
+
+        ambulancia.regresarSinPaciente();
+        assertTrue("Debe volver a Disponible", ambulancia.getEstadoActual() instanceof DisponibleState);
+
+        // Ciclo de mantenimiento: Disponible -> EnTaller -> RegresandoDelTaller -> Disponible
+        ambulancia.solicitarMantenimiento(operario);
+        assertTrue("Debe pasar a EnTaller", ambulancia.getEstadoActual() instanceof EnTallerState);
+        assertTrue(ambulancia.isOcupado());
+
+        ambulancia.volviendoDelTaller();
+        assertTrue("Debe pasar a RegresandoDelTaller", ambulancia.getEstadoActual() instanceof RegresandoDelTallerState);
+        assertFalse(ambulancia.isOcupado());
+
+        ambulancia.regresarSinPaciente(); // ejecuta RetornoClinica() sobre el estado actual
+        assertTrue("Debe volver a Disponible tras el taller", ambulancia.getEstadoActual() instanceof DisponibleState);
     }
 }
