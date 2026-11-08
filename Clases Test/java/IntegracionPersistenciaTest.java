@@ -149,4 +149,34 @@ public class IntegracionPersistenciaTest {
     public void testEliminarDniNuloLanzaAssertionError() throws SQLException {
         dao.eliminar(null);
     }
+    
+    // =========================================================================
+    // 5. PRUEBA DE ACTUALIZACIÓN (U del CRUD)
+    // =========================================================================
+
+    @Test
+    public void testActualizarModificaElAsociadoIndicado() throws SQLException {
+        // Asociado semilla a modificar: Maria Template (DNI 87654321). Se cambia solo el teléfono.
+        Domicilio dom = new Domicilio("Libertad", 742, "Mar del Plata");
+        Asociado maria = new Asociado("Maria", "Template", "87654321", "2239990000", dom);
+
+        try {
+            dao.actualizar(maria);
+        } catch (SQLException e) {
+            fail("actualizar() lanzó SQLException al modificar el asociado con DNI 87654321: " + e.getMessage());
+        }
+
+        AsociadoDTO mariaEnBD = null;
+        AsociadoDTO juanEnBD = null;
+        for (AsociadoDTO a : dao.cargarBD()) {
+            if (a.getDni().equals("87654321")) mariaEnBD = a;
+            if (a.getDni().equals("12345678")) juanEnBD = a;
+        }
+
+        // Resultado esperado: se modifica el asociado indicado y no otro
+        assertNotNull("El asociado con DNI 87654321 debe seguir existiendo", mariaEnBD);
+        assertEquals("El teléfono del asociado indicado debe actualizarse", "2239990000", mariaEnBD.getTelefono());
+        assertNotNull("El asociado con DNI 12345678 no debe ser modificado", juanEnBD);
+        assertEquals("El nombre del asociado con DNI 12345678 no debe cambiar", "Juan", juanEnBD.getNombre());
+    }
 }
