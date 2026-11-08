@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import modelo.modeloDominio.ambulancia.Ambulancia;
-import modelo.modeloDominio.ambulancia.RegresandoDelTallerState;
+import modelo.modeloDominio.ambulancia.DisponibleState;
 import modelo.modeloDominio.ambulancia.RetornoAutomatico;
 import modelo.modeloDominio.ambulancia.TrasladandoPacienteClinicaState;
 import modelo.modeloDominio.personas.asociado.Asociado;
@@ -25,8 +25,8 @@ public class AmbulanciaConcurrenciaTest {
     // =========================================================================
 
     @Test
-    public void testDetectarBugRetornoAutomaticoBucleInvertido() throws InterruptedException {
-        // Inicialmente la simulación está activa (true)
+    public void testRetornoAutomaticoSigueActivoMientrasLaSimulacionEstaActiva() throws InterruptedException {
+        // Precondición: la simulación está activa
         assertTrue(ambulancia.isSimulacionActiva());
 
         RetornoAutomatico retorno = new RetornoAutomatico(ambulancia);
@@ -36,22 +36,31 @@ public class AmbulanciaConcurrenciaTest {
         // Esperamos un instante para permitir la ejecución del hilo
         Thread.sleep(100);
 
-        // DEMOSTRACIÓN DEL BUG: El hilo finalizó inmediatamente debido a 'while (!isSimulacionActiva())'
-        assertFalse("DEMOSTRACIÓN DE BUG: El hilo RetornoAutomatico finaliza de inmediato por tener la condición del while invertida",
-                hiloRetorno.isAlive());
+        // Comportamiento esperado: mientras la simulación está activa, el hilo debe seguir ejecutándose.
+        // Si la condición del while está invertida (while (!isSimulacionActiva())), el hilo termina de inmediato y el test falla.
+        boolean hiloVivo = hiloRetorno.isAlive();
+
+        // Limpieza: finalizamos la simulación y detenemos el hilo para no afectar a otros tests
+        ambulancia.setSimulacionActiva(false);
+        hiloRetorno.interrupt();
+        hiloRetorno.join(1000);
+
+        assertTrue("El hilo RetornoAutomatico debe seguir activo mientras la simulación está activa",
+                hiloVivo);
     }
 
     @Test
-    public void testDetectarTransicionIncorrectaEnTrasladandoPaciente() {
+    public void testTrasladandoPacienteRetornaADisponible() {
         // Forzamos el estado a TrasladandoPacienteClinicaState
         ambulancia.setState(new TrasladandoPacienteClinicaState(ambulancia));
 
         // Ejecutamos la transición de retorno
         ambulancia.regresarSinPaciente();
 
-        // DEMOSTRACIÓN DEL BUG: En lugar de pasar a Disponible, pasa a RegresandoDelTallerState
-        assertTrue("DEMOSTRACIÓN DE BUG: TrasladandoPacienteClinicaState conmuta erróneamente a RegresandoDelTallerState",
-                ambulancia.getEstadoActual() instanceof RegresandoDelTallerState);
+        // Comportamiento esperado (según la documentación de la clase): al retornar a la clínica pasa a DisponibleState.
+        // Si conmuta a otro estado (por ejemplo RegresandoDelTallerState), el test falla.
+        assertTrue("Al retornar a la clínica, la ambulancia debe quedar en DisponibleState",
+                ambulancia.getEstadoActual() instanceof DisponibleState);
     }
 
     // =========================================================================
