@@ -2,6 +2,7 @@
 
 ## Trabajo Práctico Final: Estrategia de Testing
 **Aplicación:** Clínica
+
 **Integrantes:** Ganduglia, Ciro · Rosal, Fernando Daniel · Sosa, Lucas · Stufano, Nazareno
 
 Trabajo práctico de testing sobre la aplicación Clínica, diferenciando dos niveles:
