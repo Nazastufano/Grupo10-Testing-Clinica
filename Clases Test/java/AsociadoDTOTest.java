@@ -113,7 +113,7 @@ public class AsociadoDTOTest {
 
     @Test(expected = AssertionError.class)
     public void testSetNumeroNegativoFail() {
-        asociado.setNumero(-5);
+        asociado.setNumero(-1);
     }
 
     /**
